@@ -5,22 +5,84 @@ const app= express()
 const arquivo= 'jogos.db'
 app.listen(3000, () =>{
  console.log('API de jogo em execução na porta 3000')
- fs.acess(arquivo, fs.constants.F_OK,(err)=>{
-    if(err){
-        console.log(`${arquivo} não existe. Criando arquivo...`)
-        let jogosIniciais=[
-            {id: 1, nome:'Super Mário World', ano:1990, categoria:'Plataforma'},
-            {id: 2, nome:'Age of Empires II', ano:1999, categoria:'Estratégia'},
-            {id: 3, nome:'The Elder Scrolls V: Skyrim', ano:2011, categoria:'RPG'},
-            {id: 4, nome:'the Last of Us', ano:2013, categoria:'Aventura'}
-            {id: 5, nome:'God of War', ano:2018, categoria:'Ação'}
-
-        ];
-        fs.writeFileSync(arquivo, JSON.stringfy(jogosIniciais))
-    }
- })
- 
-
-
 }
 )
+
+
+app.get('/jogos',(req,res)=>{
+
+    let data=fs.readFileSync(arquivo)
+    let jogos= JSON.parse(data)
+
+    //Verifica se foi passado um paramentro de busca
+    if(req.query.categoria){
+        jogos=jogos.filter(jogo=>jogo.categoria.toLowerCase().includes(req.query.categoria.toLowerCase()))
+    }
+    res.send(jogos)
+
+})
+
+app.get('/jogos/:id',(req,res) => {
+  let data= fs.readFileSync(arquivo)
+  let jogos= JSON.parse(data)
+  let jogo= jogos.find(jogo=>jogo.id==req.params.id)
+
+  if (jogo){
+    res.send(jogo)
+  }else{
+res.status(404).send("Jogo Não Encontrado")
+  }
+
+})
+
+
+app.post('/jogos',(req,res) => {
+    let data= fs.readFileSync(arquivo)
+    let jogos= JSON.parse(data)
+    let novoJogo= req.body
+    novoJogo.id=jogos.length+1
+    jogos.push(novoJogo)
+    fs.writeFileSync(arquivo, JSON.stringify(jogos))
+    res.status(201).send(novoJogo)
+
+    app.use(express.json())
+})
+
+app.put('/jogos/:id',(req,res)=>{
+   let data= fs.readFileSync(arquivo)
+   let jogos= JSON.parse(data)
+   let novoValor=req.body
+   let jogo= jogos.find(jogo => {
+    if(jogo.id==req.params.id){
+        jogo.nome=novoValor.nome
+        jogo.categoria=novoValor.categoria
+        jogo.ano=novoValor.ano
+        fs.writeFileSync(arquivo, JSON.stringify(jogos))
+        return jogo
+    }
+   })
+
+   if(jogo){
+    res.send(jogo)
+   }else{
+    res.status(404).send('Jogo Não Encontrado')
+   }
+
+
+})
+
+app.delete('/jogos/:id',(req,res) => {
+
+   let data= fs.readFileSync(arquivo)
+   let jogos= JSON.parse(data)
+   
+   if(!jogos.find(jogo=>jogo.id==req.params.id)){
+    return res.status(404).send('Jogo Não encontrado' )
+   }
+
+   let jogosAtualizados= jogos.filter(jogo=> jogo.id !=req.params.id)
+
+   fs.writeFileSync(arquivo, JSON.stringify(jogosAtualizados))
+   res.send('Jogo removido com sucesso')  
+
+})
