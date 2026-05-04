@@ -1,0 +1,9 @@
+const db= require('../db').db
+const Jogo= require('../models/Jogo')
+
+class JogoDAO{
+
+}
+
+modeule.exports=JogoDAO
+
